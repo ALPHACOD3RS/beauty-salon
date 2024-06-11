@@ -1,4 +1,4 @@
-package user_api
+package user_handler
 
 import (
 	model "github.com/ALPHACOD3RS/Beauty-Salon/internal/models"
