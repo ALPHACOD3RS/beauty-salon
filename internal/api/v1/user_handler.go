@@ -1,11 +1,15 @@
 package user_handler
 
 import (
+	"os"
+	"time"
+
 	model "github.com/ALPHACOD3RS/Beauty-Salon/internal/models"
 	"github.com/ALPHACOD3RS/Beauty-Salon/internal/utils"
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
 	"gorm.io/gorm"
-)
+)	
 
 
 func RegisterUserHandler(c *fiber.Ctx, db *gorm.DB) error{
@@ -36,4 +40,53 @@ func RegisterUserHandler(c *fiber.Ctx, db *gorm.DB) error{
 	}
 
 	return c.JSON(user)
+}
+
+
+func LoginHandler(c *fiber.Ctx, db *gorm.DB) error{
+
+	inputUser := new(model.User)
+
+	if err := c.BodyParser(&inputUser); err != nil{
+		return c.Status(400).JSON(fiber.Map{
+			"msg": "something wen wrong",
+		})
+	}
+
+	var user model.User
+
+	if err := db.Where("email = ?", inputUser.Email).First(&user).Error; err != nil{
+		return c.Status(400).JSON(fiber.Map{
+			"msg": "Invalid credential ",
+		})
+	}
+
+	if !utils.VerifyHashedPassword(inputUser.Password, user.Password){
+		return c.Status(400).JSON(fiber.Map{
+			"msg": "password or email is incorrect",
+		})
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"id": user.ID,
+		"email": user.Email,
+		"role": user.Role,
+		"exp":  time.Now().Add(time.Hour * 72).Unix(),
+	})
+
+	signedToken, err := token.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
+	if err != nil{
+		return err
+	}
+	
+	response := struct {
+        User  model.User `json:"user"`
+        Token string     `json:"token"`
+    }{
+        User:  user,
+        Token: signedToken,
+    }
+
+	return c.Status(200).JSON(response)
+	
 }

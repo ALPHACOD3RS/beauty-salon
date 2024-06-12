@@ -6,23 +6,25 @@ import (
 	"github.com/ALPHACOD3RS/Beauty-Salon/internal/api"
 	database "github.com/ALPHACOD3RS/Beauty-Salon/internal/db"
 	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
+
 )
 
 
 func main(){
+	godotenv.Load(".env")
 	db := database.InitDatabase()
-
-	
-
 	app := fiber.New()
-
-	// api
 
 	api.SetupRoutes(app, db)
 
 
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.Status(200).SendString("working")
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.Status(200).JSON(
+			fiber.Map{
+				"msg": "api is working",
+			},
+		)
 	})
 
 	if err := app.Listen(":8000"); err != nil {
