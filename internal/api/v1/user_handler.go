@@ -5,7 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/ALPHACOD3RS/Beauty-Salon/internal/database"
 	"github.com/ALPHACOD3RS/Beauty-Salon/internal/models"
 	"github.com/ALPHACOD3RS/Beauty-Salon/internal/utils"
 	"github.com/gofiber/fiber/v2"
@@ -14,10 +13,10 @@ import (
 	"gorm.io/gorm"
 )
 
-func RegisterUserHandler(c *fiber.Ctx) error {
+func RegisterUserHandler(c *fiber.Ctx, db *gorm.DB) error {
 	newUser := new(models.User)
 
-	db := database.InitDatabase()
+	
 
 	userID := uuid.New().String()
 
@@ -30,7 +29,7 @@ func RegisterUserHandler(c *fiber.Ctx) error {
 
 	// Set default role if not provided
 	if newUser.Role == "" {
-		newUser.Role = models.CustomerRole
+		newUser.Role = string(models.CustomerRole)
 	}
 
 	pass, err := utils.HashPassword(newUser.Password)
@@ -83,7 +82,7 @@ func LoginHandler(c *fiber.Ctx, db *gorm.DB) error{
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id": user.UserID,
+		"user_id": user.UserID,
 		"email": user.Email,
 		"role": user.Role,
 		"exp":  time.Now().Add(time.Hour * 72).Unix(),

@@ -62,6 +62,7 @@ func AuthMidleware(c *fiber.Ctx) error{
         })
     }
 
+    c.Locals("user", token)
 
 	return c.Next()
 
