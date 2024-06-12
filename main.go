@@ -1,13 +1,13 @@
+
 package main
 
 import (
 	"log"
 
 	"github.com/ALPHACOD3RS/Beauty-Salon/internal/api"
-	database "github.com/ALPHACOD3RS/Beauty-Salon/internal/db"
+	database "github.com/ALPHACOD3RS/Beauty-Salon/internal/database"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
-
 )
 
 
@@ -32,3 +32,4 @@ func main(){
 	}
 
 }
+

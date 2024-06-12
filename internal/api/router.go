@@ -13,7 +13,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
     v1 := api.Group("/v1")
 	//auth api
 	v1.Post("/register", func(c *fiber.Ctx) error {
-		return user_handler.RegisterUserHandler(c, db)
+		return user_handler.RegisterUserHandler(c)
 	})
 
 	v1.Post("/login", func(c *fiber.Ctx) error {

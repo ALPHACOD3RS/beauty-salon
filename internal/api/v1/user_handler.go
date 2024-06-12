@@ -1,51 +1,66 @@
-package user_handler
+package v1
 
 import (
+	"fmt"
 	"os"
 	"time"
 
-	model "github.com/ALPHACOD3RS/Beauty-Salon/internal/models"
+	"github.com/ALPHACOD3RS/Beauty-Salon/internal/database"
+	"github.com/ALPHACOD3RS/Beauty-Salon/internal/models"
 	"github.com/ALPHACOD3RS/Beauty-Salon/internal/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
-)	
+)
+
+func RegisterUserHandler(c *fiber.Ctx) error {
+	newUser := new(models.User)
+
+	db := database.InitDatabase()
+
+	userID := uuid.New().String()
+
+	if err := c.BodyParser(newUser); err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"msg": "Please fill all the necessary fields!",
+			"err": err.Error(),
+		})
+	}
+
+	// Set default role if not provided
+	if newUser.Role == "" {
+		newUser.Role = models.CustomerRole
+	}
+
+	pass, err := utils.HashPassword(newUser.Password)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"msg": "Something went wrong",
+			"err": err.Error(),
+		})
+	}
+
+	newUser.Password = pass
+	newUser.UserID = userID
 
 
-func RegisterUserHandler(c *fiber.Ctx, db *gorm.DB) error{
-
-	user := new(model.User)
-
-	if err := c.BodyParser(&user); err != nil{
+	if err := db.Create(&newUser).Error; err != nil {
+		fmt.Printf("Error creating user: %v\n", err)
+		fmt.Printf("User data: %+v\n", newUser)
 
 		return c.Status(400).JSON(fiber.Map{
-			"msg": "please fill als the neccessary fields!",
-		})
-
-	}
-
-	pass, err := utils.HashPassword(string(user.Password))
-	if err != nil{
-		return c.Status(301).JSON(fiber.Map{
-			"msg": "something went wrong",
+			"msg": "Cannot create the user",
+			"err": err.Error(),
 		})
 	}
 
-	user.Password = pass
-
-	if err := db.Create(&user).Error; err != nil{
-		return c.Status(400).JSON(fiber.Map{
-			"msg": "can not create the user",
-		})
-	}
-
-	return c.JSON(user)
+	return c.JSON(newUser)
 }
-
 
 func LoginHandler(c *fiber.Ctx, db *gorm.DB) error{
 
-	inputUser := new(model.User)
+	inputUser := new(models.User)
 
 	if err := c.BodyParser(&inputUser); err != nil{
 		return c.Status(400).JSON(fiber.Map{
@@ -53,7 +68,7 @@ func LoginHandler(c *fiber.Ctx, db *gorm.DB) error{
 		})
 	}
 
-	var user model.User
+	var user models.User
 
 	if err := db.Where("email = ?", inputUser.Email).First(&user).Error; err != nil{
 		return c.Status(400).JSON(fiber.Map{
@@ -68,7 +83,7 @@ func LoginHandler(c *fiber.Ctx, db *gorm.DB) error{
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id": user.ID,
+		"id": user.UserID,
 		"email": user.Email,
 		"role": user.Role,
 		"exp":  time.Now().Add(time.Hour * 72).Unix(),
@@ -80,7 +95,7 @@ func LoginHandler(c *fiber.Ctx, db *gorm.DB) error{
 	}
 	
 	response := struct {
-        User  model.User `json:"user"`
+        User  models.User `json:"user"`
         Token string     `json:"token"`
     }{
         User:  user,
